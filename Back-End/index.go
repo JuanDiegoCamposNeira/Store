@@ -33,14 +33,17 @@ type Transaction struct {
 //----------------------- Products -----------------------
 // Function to add a list of products to the DB
 func postProducts(response http.ResponseWriter, request *http.Request) {
-	var product Product
-	err := json.NewDecoder(request.Body).Decode(&product)
+	// Create slice of products
+	products := []Product{}
+
+	// Decode request body into products slice
+	err := json.NewDecoder(request.Body).Decode(&products)
 	if err != nil {
-		http.Error(response, err.Error(), http.StatusBadRequest)
+		message := fmt.Sprintf("Error ... %v", err)
+		response.Write([]byte(message))
 		return
 	}
-	fmt.Fprint(response, "Product: %v", product)
-	fmt.Printf("Product : id[%v] name[%v] price[%v]", product.Id, product.Name, product.Price)
+	fmt.Println(products)
 }
 
 //------------------------ Buyers ------------------------
