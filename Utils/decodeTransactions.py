@@ -23,7 +23,14 @@ with open(filePath, 'r') as file:
         ip = transaction[2]
         device = transaction[3]
         products = transaction[4]
-        transactionDict = { 'id': transactionId, 'buyerId': buyerId, 'ip': ip, 'device': device}
+        # Remove parenthesis from products 
+        products = products.replace('(', '') 
+        products = products.replace(')', '')
+        # Split into single products
+        products = products.split(',')
+
+        transactionDict = { 'id': transactionId, 'buyerId': buyerId, 'ip': ip, 'device': device, 'products': products}
+        print(transactionDict)
         transactionsData.append(transactionDict) 
 
 # Parse data into JSON format

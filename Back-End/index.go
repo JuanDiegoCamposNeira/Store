@@ -39,17 +39,30 @@ func postProducts(response http.ResponseWriter, request *http.Request) {
 	// Decode request body into products slice
 	err := json.NewDecoder(request.Body).Decode(&products)
 	if err != nil {
-		message := fmt.Sprintf("Error ... %v", err)
+		message := fmt.Sprintf("PostProducts:Error ... %v", err)
 		response.Write([]byte(message))
 		return
 	}
 	fmt.Println(products)
+	response.Write([]byte("PostProducts:Succsessfull"))
 }
 
 //------------------------ Buyers ------------------------
 // Function to add a list of buyers to the DB
 func postBuyers(response http.ResponseWriter, request *http.Request) {
-	response.Write([]byte("Hello from post buyers"))
+	// Create slice to store buyers
+	buyers := []Person{}
+
+	// Decode body request into buyers slice
+	err := json.NewDecoder(request.Body).Decode(&buyers)
+	// Check whether an error occurred while parsing data or not
+	if err != nil {
+		message := fmt.Sprintf("PostBuyers:Error ... %v", err)
+		response.Write([]byte(message))
+		return
+	}
+	fmt.Println(buyers)
+	response.Write([]byte("PostBuyers:Succsessfull"))
 }
 
 // Function to get all the buyers that have been buy in the plattform
