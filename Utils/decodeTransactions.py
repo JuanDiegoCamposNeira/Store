@@ -1,11 +1,7 @@
 import json, sys
 
-if len(sys.argv) != 3: 
-    print('Not enought arguments: \npython3 decodeTransactions.py <input_file_path> <output_json_path_file>')
-    exit()
-
-filePath = sys.argv[1]
-jsonFilePath = sys.argv[2]
+filePath = '/Users/juancamposneira/Desktop/Reto-Aprendizaje/Data/Encoded/transactions.txt'
+jsonFilePath = '/Users/juancamposneira/Desktop/Reto-Aprendizaje/Data/Decoded/transactions.json'
 
 # Save data in a dict
 transactionsData = []
@@ -29,8 +25,7 @@ with open(filePath, 'r') as file:
         # Split into single products
         products = products.split(',')
 
-        transactionDict = { 'id': transactionId, 'buyerId': buyerId, 'ip': ip, 'device': device, 'products': products}
-        print(transactionDict)
+        transactionDict = { 'uid': transactionId, 'buyerId': buyerId, 'ip': ip, 'device': device, 'products': products}
         transactionsData.append(transactionDict) 
 
 # Parse data into JSON format

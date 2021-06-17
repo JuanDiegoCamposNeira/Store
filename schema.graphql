@@ -1,0 +1,19 @@
+type Product {
+    id: String! @id
+    name: String! 
+    Price: String! 
+}
+
+type Person {
+	uid: String! @id
+    name: String! 
+    age: Int
+}
+
+type Trasaction {
+	id: String! @id
+    buyerId: Person!
+    ip: String! 
+    device: String! 
+    products: [Product!]
+}
