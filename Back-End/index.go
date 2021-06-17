@@ -52,28 +52,6 @@ type Suggestion struct {
 }
 
 //--------------------------------------------------------
-//						DGraph
-//--------------------------------------------------------
-// // var err error                                                    // To catch errors
-// var ctx = context.Background()                                 // Context
-// var conn, _ = grpc.Dial("127.0.0.1:9080", grpc.WithInsecure()) // GRPC client connection
-// var dc = api.NewDgraphClient(conn)                             // DGrap client
-// var dg = dgo.NewDgraphClient(dc)                               // Dgraph go
-// var mu = &api.Mutation{CommitNow: true}                        // To make a mutation to the DB
-
-// ctx = context.Background()
-// conn, err = grpc.Dial("127.0.0.1:9080", grpc.WithInsecure())
-// if err != nil {
-// 	log.Fatal("While trying to dial gRPC")
-// }
-// defer conn.Close()
-
-// dc = api.NewDgraphClient(conn)
-// dg = dgo.NewDgraphClient(dc)
-
-// mu = &api.Mutation{CommitNow: true}
-
-//--------------------------------------------------------
 //						Global variables
 //--------------------------------------------------------
 var _ map[string]map[string]int                   // [day] : { [Product]: quantity, [Product]: quantity, ... }
@@ -290,8 +268,20 @@ func getBuyers(response http.ResponseWriter, request *http.Request) {
 
 // Function to get a buyer given an Id
 func getBuyerById(response http.ResponseWriter, request *http.Request) {
+
+	// Get requested buyer Id passed as parameter
 	buyerId := chi.URLParam(request, "buyerId")
 
+	// Struct to save reponse data
+	type Response struct {
+		SameIp              []Transaction `json:"sameIp"`
+		TransactionsHistory []Transaction `json:"history"`
+		Suggestions         map[string][]Product
+	}
+	// Instance of the response struct
+	var res Response
+
+	//------------- Make request to DB -------------
 	ctx := context.Background()
 	conn, err := grpc.Dial("127.0.0.1:9080", grpc.WithInsecure())
 	if err != nil {
@@ -302,7 +292,8 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 	dc := api.NewDgraphClient(conn)
 	dg := dgo.NewDgraphClient(dc)
 
-	// Query to get buyer by id
+	//------------- Query transactions history to the DB -------------
+	// Construct query
 	const buyersQuery = `query history($id: string) { 
 							history(func: has(buyer)) @filter(uid_in(buyer, $id)) {
 								device
@@ -319,36 +310,26 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 								}
 							}
 						}`
-
-	// Query DB
+	// Send query to the DB
 	variables := map[string]string{"$id": buyers[buyerId]}
-	// variables := map[string]string{"$id": "0x22c3e"}
 	resp, err := dg.NewTxn().QueryWithVars(ctx, buyersQuery, variables)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	//
-	type Response struct {
-		SameIp              []Transaction `json:"sameIp"`
-		TransactionsHistory []Transaction `json:"history"`
-		Suggestions         [][]Product
-	}
-	var res Response
-	// Decode response to evaluate IP addresses
+	//----- Process query response -----
+	// Decode transactions history
 	err = json.Unmarshal(resp.Json, &res)
 	if err != nil {
 		log.Fatalf("GetBuyerById:Error while unmarshal JSON => %v", err)
 	}
-	// Get all Ip addresses
+
+	//------------- Query same IP addesses to the DB -------------
+	// Get IP addresses from every transaction made
 	var ipAddresses string
 	for _, transaction := range res.TransactionsHistory {
 		ipAddresses += transaction.Ip + " "
 	}
-	// Debug
-	// fmt.Printf("Ip Addresses => %v\n", ipAddresses)
-
-	// Query to get buyer by id
+	// Create query to get the users using the same address of the given buyer
 	const sameAddresses = `	query sameIp($addresses: string) { 
 								sameIp(func: anyofterms(ip, $addresses))  {
 									device
@@ -360,49 +341,39 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 									}
 								}
 							}`
-
-	// Query DB
+	// Send query to the DB
 	variables = map[string]string{"$addresses": ipAddresses}
 	resp, err = dg.NewTxn().QueryWithVars(ctx, sameAddresses, variables)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Debug
-	// fmt.Printf("Transactions with the same address => %v", resp.Json)
-
-	// Parse SameIP response into struct
+	//----- Process query response -----
+	// Decode users with the sameIp
 	err = json.Unmarshal(resp.Json, &res)
 	if err != nil {
-		log.Fatalf("GetBuyerById:Error while unmarshal Same address to JSON => %v", err)
+		log.Fatalf("GetBuyerById:Error while unmarshal SameAddress to JSON => %v", err)
 	}
 
-	// Debug
-	fmt.Printf("Products => %v\n", productsObj)
+	//------------- Get suggestions based on the most buyed products -------------
 	// Add suggestions to the reponse
-	responseSuggestions := [][]Product{}
-	for i, transaction := range res.TransactionsHistory {
+	responseSuggestions := map[string][]Product{} // Map to store suggestions
+	for _, transaction := range res.TransactionsHistory {
 		// Traverse the products in the transactions
-		fmt.Printf("Transaction #%v : \n", i)
 		for _, product := range transaction.Products {
 			productSuggestions := []Product{}
 			// Get the first two items in the map
 			count := 0
-			fmt.Println("")
-			fmt.Printf("Suggestions for product %v => %v\n", product.Uid, suggestions[product.Uid])
 			for key := range suggestions[product.Uid] {
 				if count == 2 {
 					break
 				}
-				fmt.Printf("Product #%v => %v \n", count, key)
 				productSuggestions = append(productSuggestions, productsObj[key])
 				count++
 			}
-			responseSuggestions = append(responseSuggestions, productSuggestions)
+			// Save suggestions for the current product
+			responseSuggestions[product.Name] = productSuggestions
 		}
-		fmt.Println("------------------------")
 	}
-	// Debug
-	fmt.Printf("\nSuggestions => %v \n", responseSuggestions)
 	// Add slice with suggestions to response
 	res.Suggestions = responseSuggestions
 
@@ -411,6 +382,7 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 		log.Fatalf("GetBuyerById: Error while marshal to JSON => %v", err)
 	}
 
+	//------------- Send succsessfull response -------------
 	response.Write(responseJson)
 }
 
