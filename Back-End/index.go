@@ -91,8 +91,8 @@ var transactions = make(map[string]string)
 //----------------------- Utils --------------------------
 /*
  Function to check date in a request
- param (httpRequest)
- return (string) date given in the url or the current day by default
+ @param (httpRequest)
+ @return (string) date given in the url or the current day by default
 */
 func checkDate(request *http.Request) string {
 	date := request.URL.Query().Get("date")
@@ -103,6 +103,56 @@ func checkDate(request *http.Request) string {
 	return date
 }
 
+/*
+ Function to make a request to the DB
+ @param (string : Represents the schema to be installed in the DB,
+		 []byte : Represents the data parsed into JSON format)
+ @return (api.Response : Represents DB response,
+	 	  error : If an error occurs)
+*/
+func dbRequest(schema string, jsonData []byte) (*api.Response, error) {
+
+	//------------- Get context -------------
+	ctx := context.Background()
+	//------------- Create connection to the DB -------------
+	conn, connectionErr := grpc.Dial("127.0.0.1:9080", grpc.WithInsecure())
+	// Check if an error occurred while connecting to the DB
+	if connectionErr != nil {
+		return nil, connectionErr
+	}
+	// Defer close of the connection until is no longer used
+	defer conn.Close()
+
+	//------------- Create DGraph client -------------
+	dc := api.NewDgraphClient(conn)
+	dg := dgo.NewDgraphClient(dc)
+
+	//------------- Schema  -------------
+	// Install a schema into dgraph
+	schemaError := dg.Alter(context.Background(), &api.Operation{
+		Schema: schema,
+	})
+	// Check if an error occurred while setting schema into DB
+	if schemaError != nil {
+		return nil, schemaError
+	}
+
+	//------------- Mutation -------------
+	// Define mutation
+	mu := &api.Mutation{CommitNow: true}
+	// Convert parameter slice into JSON format
+	mu.SetJson = jsonData
+	// Make mutation to the DB
+	response, err := dg.NewTxn().Mutate(ctx, mu)
+	// Check if error occurred while making mutation to the DB
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//------------- Successfull response -------------
+	return response, nil
+}
+
 //----------------------- Products -----------------------
 // Function to add a list of products to the DB
 func postProducts(response http.ResponseWriter, request *http.Request) {
@@ -111,102 +161,51 @@ func postProducts(response http.ResponseWriter, request *http.Request) {
 	date := checkDate(request)
 
 	// Create slice of products
-	products_arr := []Product{}
+	currentTransactionProducts := []Product{}
 
 	// Decode request body into products slice
-	err := json.NewDecoder(request.Body).Decode(&products_arr)
-	// Check whether an error occurred while parsing data or not
-	if err != nil {
-		message := fmt.Sprintf("PostProducts:Error ... %v", err)
+	jsonErr := json.NewDecoder(request.Body).Decode(&currentTransactionProducts)
+	// Check if error occurred
+	if jsonErr != nil {
+		message := fmt.Sprintf("PostProducts:Error ... %v", jsonErr)
 		response.Write([]byte(message))
-		return
-	}
-	//------- Modification
-	// Create and save Objects of products
-	// products_quantity := map[string]int{}
-	// for _, product := range products_arr {
-	// 	// Create Product to store in map
-	// 	p := Product{
-	// 		Type:  product.Type,
-	// 		Uid:   product.Uid[2:],
-	// 		Name:  product.Name,
-	// 		Price: product.Price,
-	// 	}
-	// 	// Save product in map with the object as a key
-	// 	productsObj[p.Uid] = p
-	// 	//
-	// 	products_quantity[p.Uid] = 0
-	// }
-	//----- Modification
-	// for index := range suggestions {
-	// 	suggestions[index] = products_quantity
-	// }
-
-	// Debug
-	// fmt.Printf("Suggestions Map => %v \n", suggestions)
-
-	// Add products to DB
-	//------------------------------
-	// Connection to DB
-	ctx := context.Background()
-	conn, err := grpc.Dial("127.0.0.1:9080", grpc.WithInsecure())
-	if err != nil {
-		log.Fatal("While trying to dial gRPC")
-	}
-	defer conn.Close()
-
-	dc := api.NewDgraphClient(conn)
-	dg := dgo.NewDgraphClient(dc)
-
-	// Schema
-	// Install a schema into dgraph. Accounts have a `name` and a `balance`.
-	err1 := dg.Alter(context.Background(), &api.Operation{
-		Schema: `
-			type:  string @index(exact) . 
-			name:  string @index(term) .
-			price: string @index(term) .
-		`,
-	})
-	if err1 != nil {
-		log.Fatal("postProducts:Error setting schema")
+		log.Fatal(message)
 	}
 
-	// Mutation
-	mu := &api.Mutation{CommitNow: true}
-
-	pb, err := json.Marshal(products_arr)
+	//------------- Make request to DB -------------
+	// Create schema for the fields
+	schema := `
+		type:  string @index(exact) . 
+		name:  string @index(term) .
+		price: string @index(term) .
+	`
+	// Convert slice into JSON format
+	productsJson, err := json.Marshal(currentTransactionProducts)
 	if err != nil {
 		log.Fatal(err)
 	}
-	mu.SetJson = pb
-	assigned, err := dg.NewTxn().Mutate(ctx, mu)
+	// Send mutation to DB
+	dbResponse, err := dbRequest(schema, productsJson)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("PostProducts : Error while making request to DB => %v", err)
 	}
-	// Debug
-	// fmt.Printf("Response => %v \n", assigned)
-	//------------------------------
 
-	// Save products assigned UIDs
-	products = assigned.Uids
-	// Debug
-	// fmt.Printf("Saved Products => %v \n", products)
-	// Fill suggestions map
+	//------------- Process DB response -------------
+	// Save the UIDs assigned by DGraph to the products
+	products = dbResponse.Uids
+	// Fill suggestions map with empty map
 	for _, productUid := range products {
 		suggestions[productUid] = make(map[string]int)
 	}
-
-	//-------- Modification
-	// Debug
-	// fmt.Printf("Assigned UIDS => %v\n", products)
-	// Create and save Objects of products
-	for _, product := range products_arr {
-		// Save product in map with the object as a key
-		productsObj[products[product.Uid[2:]]] = product // product.Uid = _:abcdef
+	// Save products objects in 'productsObj' map
+	for _, productObject := range currentTransactionProducts {
+		// Save product in map with the Uid as the key
+		productId := productObject.Uid[2:]      // Id given in request.body => _:abcdef
+		productUid := products[productId]       // Uid given by DGraph
+		productsObj[productUid] = productObject // Assign product object
 	}
-	//--------
 
-	// Send succsessfull message
+	//------------- Send succsessfull response -------------
 	message := fmt.Sprintf("PostProducts: Added [%v] products, date [%v]", len(products), date)
 	response.Write([]byte(message))
 }
@@ -219,71 +218,40 @@ func postBuyers(response http.ResponseWriter, request *http.Request) {
 	date := checkDate(request)
 
 	// Create slice to store buyers
-	buyers_arr := []Person{}
+	buyersArr := []Person{}
 
 	// Decode body request into buyers slice
-	err := json.NewDecoder(request.Body).Decode(&buyers_arr)
-	// Check whether an error occurred while parsing data or not
+	err := json.NewDecoder(request.Body).Decode(&buyersArr)
+	// Check if error occurred
 	if err != nil {
 		message := fmt.Sprintf("PostBuyers: Error ... %v", err)
 		response.Write([]byte(message))
-		return
+		log.Fatal(message)
 	}
 
-	// person := Person{
-	// 	Type: "Person",
-	// 	Uid:  "_:1c5a5873",
-	// 	Name: "Kilroy",
-	// 	Age:  47,
-	// }
-
-	// Add buyers to DB
-	//------------------------------
-	// Connection to DB
-	ctx := context.Background()
-	conn, err := grpc.Dial("127.0.0.1:9080", grpc.WithInsecure())
-	if err != nil {
-		log.Fatal("While trying to dial gRPC")
-	}
-	defer conn.Close()
-
-	dc := api.NewDgraphClient(conn)
-	dg := dgo.NewDgraphClient(dc)
-
-	// Schema
-	// Install a schema into dgraph. Accounts have a `name` and a `balance`.
-	err1 := dg.Alter(context.Background(), &api.Operation{
-		Schema: `
-			type:  string @index(exact) . 
-			name:  string @index(term) .
-			age:   int .
-		`,
-	})
-	if err1 != nil {
-		errorMessage := fmt.Sprintf("postProducts:Error setting schema -> %v", err1)
-		log.Fatal(errorMessage)
-	}
-
-	// Mutation
-	mu := &api.Mutation{CommitNow: true}
-
-	pb, err := json.Marshal(buyers_arr)
+	//------------- Make request to DB -------------
+	// Create schema for the fields
+	schema := `
+		type:  string @index(exact) . 
+		name:  string @index(term) .
+		age:   int .
+	`
+	// Convert slice into JSON format
+	buyersJson, err := json.Marshal(buyersArr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	mu.SetJson = pb
-	assigned, err := dg.NewTxn().Mutate(ctx, mu)
+	// Send mutation to DB
+	dbResponse, err := dbRequest(schema, buyersJson)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("PostBuyers : Error while making request to DB => %v", err)
 	}
-	//------------------------------
 
-	buyers = assigned.Uids
-	// Debug
-	// fmt.Println("Assigned => ", buyers)
+	//------------- Process DB response -------------
+	buyers = dbResponse.Uids // Save the UIDs assigned by DGraph to the buyers
 
-	// Send succsessfull message
-	message := fmt.Sprintf("PostBuyers: Added [%v] buyers, date [%v]", len(buyers_arr), date)
+	//------------- Send succsessfull response -------------
+	message := fmt.Sprintf("PostBuyers: Added [%v] buyers, date [%v]", len(buyersArr), date)
 	response.Write([]byte(message))
 }
 
@@ -453,168 +421,97 @@ func postTransactions(response http.ResponseWriter, request *http.Request) {
 	// Check if date is given or not
 	date := checkDate(request)
 
-	// Aux struct to decode body in the request
+	//------------- Process http request -------------
+	// Aux struct to decode request's body
 	type TransactionAux struct {
-		Type     string
-		Uid      string
-		BuyerId  string
-		Ip       string
-		Device   string
-		Products []string
+		Type, Uid, BuyerId, Ip, Device string
+		Products                       []string
 	}
 	// Create slice to store transactions
-	transactions_encoded := []TransactionAux{} // Transactions without the reference to the buyer or the products
-
-	// Decode request body into transactions slice
-	err := json.NewDecoder(request.Body).Decode(&transactions_encoded)
-	// Check whether an error occurred while parsing data or not
+	transactionsEncoded := []TransactionAux{} // Transactions without the reference to the buyer or the products
+	// Decode request's body into transactions slice
+	err := json.NewDecoder(request.Body).Decode(&transactionsEncoded)
 	if err != nil {
 		message := fmt.Sprintf("PostTransactions:Error ... %v", err)
 		response.Write([]byte(message))
-		return
+		log.Fatal(message)
 	}
 
-	//
-	transactions_decoded := []Transaction{}
+	//------------- Process transactions -------------
+	transactionsDecoded := []Transaction{} // Slice to store transactions with the reference to the UIDs in the DB
+	// Traverse encoded transactions
+	for _, transaction := range transactionsEncoded {
 
-	// Debug
-	// fmt.Printf("Products : %v \n", products)
-	for _, transaction := range transactions_encoded {
-		// Get products UIDs
-		products_arr := []Product{}
-		for i, productId := range transaction.Products {
-			products_arr = append(products_arr, Product{Uid: products[productId]})
+		// Slices to store products
+		currentTransactionDecodedProducts := []Product{} // Slice to store the UIDs of the products given by Dgraph
+		currentTransactionProducts := transaction.Products
 
-			// Fill suggestions map
-			for j, j_productId := range transaction.Products {
+		//------------- Create require DGraph format -------------
+		// Create DGraph required format to link an existing product node to the transaction
+		// Format example :
+		//		{
+		// 			...
+		// 			Product : [ { Uid: <uid_given_by_DGraph> } [, { Uid :  <uid_given_by_DGraph> }, ...] ]
+		// 			...
+		// 		}
+		//
+		for _, productId := range currentTransactionProducts {
+			currentTransactionDecodedProducts = append(currentTransactionDecodedProducts, Product{Uid: products[productId]})
+		}
+
+		//------------- Fill suggestions map -------------
+		for i, i_productId := range currentTransactionProducts {
+			for j, j_productId := range currentTransactionProducts {
+				// Don't include the product being evaluated
 				if i == j {
 					continue
 				}
-
-				suggestions[products[productId]][products[j_productId]] += 1
+				// Add one to the suggestions map of the product
+				suggestions[products[i_productId]][products[j_productId]] += 1
 			}
 		}
 
-		// Create transaction with links to Products and Buyer
-		transaction_temp := Transaction{
+		//------------- Decode transaction -------------
+		// Create transaction with references (UIDs) to Products and Buyer in DB
+		decodedTransaction := Transaction{
 			Type:     "Transaction",
 			Uid:      "_:" + transaction.Uid,
 			Buyer:    Person{Uid: buyers[transaction.BuyerId]},
 			Ip:       transaction.Ip,
 			Device:   transaction.Device,
-			Products: products_arr,
+			Products: currentTransactionDecodedProducts,
 		}
 		// Add decoded transaction
-		transactions_decoded = append(transactions_decoded, transaction_temp)
+		transactionsDecoded = append(transactionsDecoded, decodedTransaction)
 	}
 
-	// transaction := Transaction{
-	// 	Type:   "Transaction",
-	// 	Uid:    "_:000060c3f900",
-	// 	Buyer:  Person{Uid: buyers["a"]},
-	// 	Ip:     "12.3.2.1",
-	// 	Device: "mac",
-	// }
-
-	// Add transactions to DB
-	//------------------------------
-	// Connection to DB
-	ctx := context.Background()
-	conn, err := grpc.Dial("127.0.0.1:9080", grpc.WithInsecure())
-	if err != nil {
-		log.Fatal("While trying to dial gRPC")
-	}
-	defer conn.Close()
-
-	dc := api.NewDgraphClient(conn)
-	dg := dgo.NewDgraphClient(dc)
-	// Schema
-	// Install a schema into dgraph.
-	err1 := dg.Alter(context.Background(), &api.Operation{
-		Schema: `
-			type:  		string @index(exact) . 
-			buyer:  	uid .
-			ip:  		string @index(term) .
-			device: 	string . 
-			products: 	[uid]  .
-		`,
-	})
-	if err1 != nil {
-		errorMessage := fmt.Sprintf("postProducts:Error setting schema => %v", err1)
-		log.Fatal(errorMessage)
-	}
-
-	// Mutation
-	mu := &api.Mutation{CommitNow: true}
-
-	pb, err := json.Marshal(transactions_decoded)
+	//------------- Make request to DB -------------
+	// Create schema for the fields
+	schema := `
+		type:  		string @index(exact) . 
+		buyer:  	uid .
+		ip:  		string @index(term) .
+		device: 	string . 
+		products: 	[uid]  .
+	`
+	// Convert slice into JSON format
+	transactionsJson, err := json.Marshal(transactionsDecoded)
 	if err != nil {
 		log.Fatal(err)
 	}
-	mu.SetJson = pb
-	assigned, err := dg.NewTxn().Mutate(ctx, mu)
+	// Send mutation to DB
+	dbResponse, err := dbRequest(schema, transactionsJson)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("PostProducts : Error while making request to DB => %v", err)
 	}
-	//------------------------------
 
-	// Save transactions Uids
-	transactions = assigned.Uids
-	// Debug
-	// fmt.Printf("Assigned %v \n", transactions)
+	//------------- Process DB response -------------
+	// Save the UIDs assigned by DGraph to the transactions
+	transactions = dbResponse.Uids
 
-	// Debug
-	// fmt.Printf("Suggestions => %v", suggestions)
-
-	// Send succsessfull message
-	message := fmt.Sprintf("PostTransactions: Added [%v] transactions, date [%v]", len(transactions_decoded), date)
+	//------------- Send succsessfull response -------------
+	message := fmt.Sprintf("PostTransactions: Added [%v] transactions, date [%v]", len(transactionsDecoded), date)
 	response.Write([]byte(message))
-}
-
-//--------------------- Transactions ---------------------
-func test(response http.ResponseWriter, request *http.Request) {
-
-	ctx := context.Background()
-	conn, err := grpc.Dial("127.0.0.1:9080", grpc.WithInsecure())
-	if err != nil {
-		log.Fatal("While trying to dial gRPC")
-	}
-	defer conn.Close()
-
-	dc := api.NewDgraphClient(conn)
-	dg := dgo.NewDgraphClient(dc)
-
-	// Create query
-	const q = `	{
-					t(func: eq(type, "Transaction")) {
-						type
-						name
-						age
-						
-						price
-						
-						uid
-							device
-						ip
-						buyer {
-								uid
-						name
-						}
-						products {
-						uid
-								name
-						price
-						}
-					}
-				}`
-
-	// Ask for the type of name and age.
-	resp, err := dg.NewTxn().Query(ctx, q)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	response.Write(resp.GetJson())
 }
 
 //--------------------------------------------------------
@@ -638,9 +535,6 @@ func main() {
 
 	//--------------   TRANSACTION endpoints   --------------
 	router.Post("/transactions", postTransactions) // Add transactions
-
-	//--------------   TRANSACTION endpoints   --------------
-	router.Get("/test", test)
 
 	//--------------   Listenning server   --------------
 	fmt.Println("Server listening on port 3000")
