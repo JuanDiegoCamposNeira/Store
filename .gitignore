@@ -1,6 +1,9 @@
 # MacOs
 .DS_Store*
 .DS_Store/*
+
+node_modules
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
