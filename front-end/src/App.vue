@@ -6,7 +6,7 @@
     <!----------------------------------------------> 
     <v-app-bar app dark>
       <!-- Title --> 
-      <v-toolbar-title> <span> <span class="T">T</span> ienda </span> </v-toolbar-title>
+      <v-toolbar-title> <span> <span class="T">T</span> <i>ienda</i> </span> </v-toolbar-title>
       <v-spacer></v-spacer>
 
       <!-- Navigation links --> 

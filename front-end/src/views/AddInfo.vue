@@ -1,32 +1,24 @@
 <template>
-  <v-file-input
-    v-model="files"
-    color="deep-purple accent-4"
-    counter
-    label="File input"
-    multiple
-    placeholder="Select your files"
-    prepend-icon="mdi-paperclip"
-    outlined
-    :show-size="1000"
-  >
-    <template v-slot:selection="{ index, text }">
-      <v-chip
-        v-if="index < 2"
-        color="deep-purple accent-4"
-        dark
-        label
-        small
-      >
-        {{ text }}
-      </v-chip>
+  <div> 
+    <!-- Date picker --> 
+    
 
-      <span
-        v-else-if="index === 2"
-        class="text-overline grey--text text--darken-3 mx-2"
-      >
-        +{{ files.length - 2 }} File(s)
-      </span>
-    </template>
-  </v-file-input>
+    <!-- Add files --> 
+    <Add title="Productos"/>
+    <Add title="Compradores"/>
+    <Add title="Transacciones"/>
+  </div>
 </template>
+
+<script>
+
+  import Add from '../components/Add.vue'
+
+  export default {
+    name: 'Home',
+
+    components: {
+      Add,
+    }
+  }
+</script>

@@ -95,6 +95,7 @@ func getBuyers(response http.ResponseWriter, request *http.Request) {
 		log.Fatal(err)
 	}
 
+	response.Header().Set("Access-Control-Allow-Origin", "*")
 	response.Write(resp.GetJson())
 }
 
@@ -107,6 +108,8 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 
 	// Get requested buyer Id passed as parameter
 	buyerId := chi.URLParam(request, "buyerId")
+	// Debug
+	fmt.Println(buyerId)
 
 	// Struct to save reponse data
 	type Response struct {
@@ -147,7 +150,7 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 							}
 						}`
 	// Send query to the DB
-	variables := map[string]string{"$id": buyers[buyerId]}
+	variables := map[string]string{"$id": buyerId}
 	resp, err := dg.NewTxn().QueryWithVars(ctx, buyersQuery, variables)
 	if err != nil {
 		log.Fatal(err)
@@ -219,5 +222,6 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 	}
 
 	//------------- Send succsessfull response -------------
+	response.Header().Set("Access-Control-Allow-Origin", "*")
 	response.Write(responseJson)
 }
