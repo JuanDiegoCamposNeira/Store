@@ -6,31 +6,25 @@
     <!----------------------------------------------> 
     <v-app-bar app dark>
       <!-- Title --> 
-      <v-toolbar-title> <span> <span class="T">T</span> <i>ienda</i> </span> </v-toolbar-title>
+      <v-toolbar-title class="ml-5"> <span class="T">T</span> <i class="ienda">ienda</i> </v-toolbar-title>
       <v-spacer></v-spacer>
 
       <!-- Navigation links --> 
-      <router-link to="/add"> Añadir </router-link>
-      <v-spacer></v-spacer>
-      <router-link to="/buyers"> Compradores </router-link>
+      <router-link to="/add" class="mr-10 navigation"> Agregar </router-link>
+      <router-link to="/buyers" class="mr-5 navigation"> Compradores </router-link>
 
     </v-app-bar>
 
     <!---------------------------------------------->
     <!--               Router views               --> 
     <!---------------------------------------------->
-    <v-main>
+    <v-main class="mt-5">
       <router-view/>
     </v-main>
 
     <!---------------------------------------------->
-    <!--                 Footer                   --> <!-- Choose one --> 
+    <!--                 Footer                   -->
     <!---------------------------------------------->
-    <v-footer padless>
-      <v-col class="text-center" cols="12" >
-        Made with ♥ by JD 
-    </v-col>
-    </v-footer>
     <v-footer padless>
         <v-col class="text-center" cols="12" >
           Made with ♡ by JD
@@ -59,12 +53,30 @@
 <!--                Style                     --> 
 <!---------------------------------------------->
 <style>
+  #app {
+    background-color: #190862 !important;
+  }
   .v-app-bar {
     background-color: #190862 !important;
   }
+
+  /*----------------- Navbar -----------------*/
+  /* Title */
   .T {
     font-family: 'Lobster', cursive;
+    font-size: 40px;
   }
+  .ienda {
+    font-size: 40px;
+    margin-left: -10px !important;
+  }
+  /* Navigation */
+  .navigation {
+    text-decoration: none;
+    color: #ffffff !important; 
+    font-size: 1.2rem;
+  }
+
 </style>
 
 <!-- 

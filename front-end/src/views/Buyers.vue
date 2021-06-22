@@ -3,6 +3,9 @@
 <!---------------------------------------------->
 <template>
     <div>
+        <!-- Title --> 
+        <p class="title d-flex justify-center align-center"> Compradores </p>
+        <!-- Buyers --> 
         <buyer v-for="buyer in this.buyersData" 
                 :key="buyer.name" 
                 :name="buyer.name" :age="buyer.age" :uid="buyer.uid" />
@@ -37,14 +40,22 @@ export default {
         Buyer,
     }, 
 
-    data: () => {
-        return { 
-            buyersData: [],
-        } 
-    }
+    data: () => ({
+        buyersData: [],
+    })
 }
 </script>
 
 <!---------------------------------------------->
 <!--                Style                     --> 
 <!---------------------------------------------->
+<style scoped>
+.title {
+    width: 100%;
+    height: 4rem;
+    /* Text */
+    color: #F3F6FF !important; 
+    font-size: 3.5rem !important;
+    font-weight: 350; 
+}
+</style>
