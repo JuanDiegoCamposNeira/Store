@@ -135,6 +135,7 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 	// Construct query
 	const buyersQuery = `query history($id: string) { 
 							history(func: has(buyer)) @filter(uid_in(buyer, $id)) {
+								uid
 								device
 								ip
 								buyer {
@@ -206,6 +207,7 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 				if count == 2 {
 					break
 				}
+				fmt.Printf("Key => %v \n", key)
 				productSuggestions = append(productSuggestions, productsObj[key])
 				count++
 			}
@@ -213,6 +215,7 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 			responseSuggestions[product.Name] = productSuggestions
 		}
 	}
+	fmt.Println(responseSuggestions)
 	// Add slice with suggestions to response
 	res.Suggestions = responseSuggestions
 
