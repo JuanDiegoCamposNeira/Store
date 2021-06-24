@@ -1,7 +1,12 @@
 <template>
   <div> 
     <!-- Date picker --> 
-     
+    <div class="date-picker-wrapper mb-5 mt-2 text-center">
+      <label class="title white--text">
+        Selecciona una fecha : 
+        <input type="date" id="selected-date"/> 
+      </label>
+    </div>
 
     <!-- Add files --> 
     <Add name="Productos"/>
@@ -50,5 +55,12 @@
     display: none; 
     position: absolute;
     bottom: 50%; 
+  }
+  .date-picker-wrapper {
+    width: 100%;  
+  }
+  .date-picker-wrapper input {
+    background-color: #F3F6FF !important;
+    border-radius: 10px
   }
 </style>

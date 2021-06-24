@@ -12,8 +12,8 @@
                     <textarea  @change="handleInputChange"
                                name="input" 
                                :id="name"
-                               rows="10" 
-                               cols="40" 
+                               rows="8" 
+                               cols="45" 
                                placeholder="Ingresa la información en formato JSON" /> 
                 </v-col> 
 
@@ -66,9 +66,10 @@
             handleAddInfo: function() {
 
                 // Get the reference to the elements
-                let errorAlert = document.getElementById("alert"); 
-                const successAlertName = this.name + "-alert"; 
-                let successAlert = document.getElementById(successAlertName)
+                let errorAlert = document.getElementById("alert");                  // Error alert
+                const successAlertName = this.name + "-alert";                      // Success alert name
+                let successAlert = document.getElementById(successAlertName)        // Success alert element
+                let selectedDate = document.getElementById("selected-date").value   // Date selected by the user
 
                 // If there is nothing in the textarea, return 
                 if (!this.inputInfo || this.inputInfo === "") {
@@ -86,8 +87,10 @@
                 if (apiEndpoint === "Productos") apiEndpoint = "products"; 
                 else if (apiEndpoint === "Compradores") apiEndpoint = "buyers"; 
                 else apiEndpoint = "transactions"; 
+                // Check if there is a selected date
+                const date = (selectedDate !== "") ? `?date=${selectedDate}` : ''; 
                 // Make post request 
-                axios.post(`http://localhost:3000/${ apiEndpoint }`, this.inputInfo)
+                axios.post(`http://localhost:3000/${ apiEndpoint + date}`, this.inputInfo)
                      .then( response => { 
                          this.responseMessage = response.data; 
                      })

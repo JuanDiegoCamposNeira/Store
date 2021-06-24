@@ -5,6 +5,17 @@
     <div>
         <!-- Title --> 
         <p class="display-3 white--text d-flex justify-center align-center"> Compradores </p>
+        <!-- Loading bar --> 
+        <div class="d-flex justify-center">
+            <v-progress-circular
+            class="mt-15"
+            indeterminate
+            size="80"
+            width="10"
+            color="primary"
+            id="loading-buyers"
+            ></v-progress-circular>
+        </div>
         <!-- Buyers --> 
         <buyer v-for="buyer in this.buyersData" 
                 :key="buyer.name" 
@@ -34,6 +45,9 @@ export default {
                  });
                  this.buyersData = buyers
              })
+             .finally( () => {
+                document.getElementById("loading-buyers").style.display = "none"; 
+             });
     },
 
     components: {
