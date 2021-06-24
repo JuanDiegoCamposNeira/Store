@@ -32,9 +32,6 @@ func postProducts(response http.ResponseWriter, request *http.Request) {
 		log.Fatal(message)
 	}
 
-	// Debug
-	fmt.Println(currentTransactionProducts)
-
 	//------------- Make request to DB -------------
 	// Create schema for the fields
 	schema := `

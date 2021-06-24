@@ -15,12 +15,13 @@ import (
 func postTransactions(response http.ResponseWriter, request *http.Request) {
 
 	// Check if date is given or not
-	date := checkDate(request)
+	currentDate := checkDate(request)
 
 	//------------- Process http request -------------
 	// Aux struct to decode request's body
 	type TransactionAux struct {
 		Type, Uid, BuyerId, Ip, Device string
+		Date                           string
 		Products                       []string
 	}
 	// Create slice to store transactions
@@ -71,6 +72,7 @@ func postTransactions(response http.ResponseWriter, request *http.Request) {
 		// Create transaction with references (UIDs) to Products and Buyer in DB
 		decodedTransaction := Transaction{
 			Type:     "Transaction",
+			Date:     currentDate,
 			Uid:      "_:" + transaction.Uid,
 			Buyer:    Person{Uid: buyers[transaction.BuyerId]},
 			Ip:       transaction.Ip,
@@ -85,6 +87,7 @@ func postTransactions(response http.ResponseWriter, request *http.Request) {
 	// Create schema for the fields
 	schema := `
 		type:  		string @index(exact) . 
+		date: 		string .
 		buyer:  	uid .
 		ip:  		string @index(term) .
 		device: 	string . 
@@ -96,16 +99,15 @@ func postTransactions(response http.ResponseWriter, request *http.Request) {
 		log.Fatal(err)
 	}
 	// Send mutation to DB
-	dbResponse, err := dbRequest(schema, transactionsJson)
+	_, err = dbRequest(schema, transactionsJson)
 	if err != nil {
 		log.Fatalf("PostProducts : Error while making request to DB => %v", err)
 	}
 
 	//------------- Process DB response -------------
-	fmt.Println(dbResponse)
 
 	//------------- Send succsessfull response -------------
 	response.Header().Set("Access-Control-Allow-Origin", "*")
-	message := fmt.Sprintf("PostTransactions: Added [%v] transactions, date [%v]", len(transactionsDecoded), date)
+	message := fmt.Sprintf("PostTransactions: Added [%v] transactions, date [%v]", len(transactionsDecoded), currentDate)
 	response.Write([]byte(message))
 }

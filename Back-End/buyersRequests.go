@@ -109,13 +109,11 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 
 	// Get requested buyer Id passed as parameter
 	buyerId := chi.URLParam(request, "buyerId")
-	// Debug
-	fmt.Println(buyerId)
 
 	// Struct to save reponse data
 	type Response struct {
-		SameIp              []Transaction `json:"sameIp"`
 		TransactionsHistory []Transaction `json:"history"`
+		SameIp              []Transaction `json:"sameIp"`
 		Suggestions         map[string][]Product
 	}
 	// Instance of the response struct
@@ -139,6 +137,7 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 								uid
 								device
 								ip
+								Date
 								buyer {
 									age
 									uid
@@ -158,6 +157,8 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 		log.Fatal(err)
 	}
 	//----- Process query response -----
+	// Debug
+	fmt.Println()
 	// Decode transactions history
 	err = json.Unmarshal(resp.Json, &res)
 	if err != nil {
@@ -208,7 +209,6 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 				if count == 2 {
 					break
 				}
-				fmt.Printf("Key => %v \n", key)
 				productSuggestions = append(productSuggestions, productsObj[key])
 				count++
 			}
@@ -216,7 +216,6 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 			responseSuggestions[product.Name] = productSuggestions
 		}
 	}
-	fmt.Println(responseSuggestions)
 	// Add slice with suggestions to response
 	res.Suggestions = responseSuggestions
 

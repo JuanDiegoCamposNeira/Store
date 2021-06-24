@@ -49,10 +49,10 @@
                     :key="transaction.id"
                     class="d-flex justify-space-around align-center mb-2 transaction-wrapper">
                     <span>
-                        <span class="font-weight-bold">Id : </span> {{ transaction.uid }} 
+                        <span class="font-weight-bold"> Fecha : </span> {{ transaction.Date }} 
                     </span>
                     <span>
-                        <span class="font-weight-bold">Cantidad Productos : </span> {{ transaction.products.length }} 
+                        <span class="font-weight-bold"> Cantidad Productos : </span> {{ transaction.products.length }} 
                     </span>
                     <span>
                         <span class="font-weight-bold"> Precio total : </span> {{ transaction.totalPrice }}

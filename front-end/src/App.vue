@@ -10,7 +10,7 @@
       <v-spacer></v-spacer>
 
       <!-- Navigation links --> 
-      <router-link to="/add" class="mr-10 navigation"> Agregar </router-link>
+      <router-link to="/" class="mr-10 navigation"> Agregar </router-link>
       <router-link to="/buyers" class="mr-5 navigation"> Compradores </router-link>
 
     </v-app-bar>
