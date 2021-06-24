@@ -3,7 +3,7 @@
         <v-container> 
             <v-row> 
                 <!-- Title --> 
-                <v-col>
+                <v-col cols="4" md="4" sm="11" xs="11">
                     <p class="display-1 white--text text-center"> {{ name }} </p>
                 </v-col>
 

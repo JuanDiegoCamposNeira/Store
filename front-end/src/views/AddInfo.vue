@@ -22,6 +22,7 @@
     id="progress"
     ></v-progress-circular>
 
+    <!-- Error alert -->
     <v-alert
       id="alert"
       type="error"
