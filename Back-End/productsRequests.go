@@ -17,6 +17,9 @@ func postProducts(response http.ResponseWriter, request *http.Request) {
 	// Check if date is given or not
 	date := checkDate(request)
 
+	// Debug
+	fmt.Println("Called")
+
 	// Create slice of products
 	currentTransactionProducts := []Product{}
 
@@ -28,6 +31,9 @@ func postProducts(response http.ResponseWriter, request *http.Request) {
 		response.Write([]byte(message))
 		log.Fatal(message)
 	}
+
+	// Debug
+	fmt.Println(currentTransactionProducts)
 
 	//------------- Make request to DB -------------
 	// Create schema for the fields
@@ -63,6 +69,7 @@ func postProducts(response http.ResponseWriter, request *http.Request) {
 	}
 
 	//------------- Send succsessfull response -------------
+	response.Header().Set("Access-Control-Allow-Origin", "*")
 	message := fmt.Sprintf("PostProducts: Added [%v] products, date [%v]", len(products), date)
 	response.Write([]byte(message))
 }

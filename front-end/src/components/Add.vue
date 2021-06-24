@@ -4,20 +4,26 @@
             <v-row> 
                 <!-- Title --> 
                 <v-col>
-                    <h2> {{ title }} </h2>
+                    <p class="display-1 white--text text-center"> {{ name }} </p>
                 </v-col>
 
-                <!-- File input -->
-                <v-col>
-                    <v-file-input
-                        label="Seleccione el archivo con extensión .json"
-                        @change="handleAddFile"
-                    ></v-file-input>
+                <!-- Input information -->
+                <v-col class="text-center">
+                    <textarea  @change="handleInputChange"
+                               name="input" 
+                               :id="name"
+                               rows="10" 
+                               cols="40" 
+                               placeholder="Ingresa la información en formato JSON" /> 
                 </v-col> 
 
                 <!-- Submit button --> 
-                <v-col> 
-                    <v-btn @click="handleAddFile"> Agregar </v-btn>
+                <v-col class="d-flex flex-column"> 
+                    <v-btn @click="handleAddInfo"> Agregar </v-btn>
+                    <v-alert
+                        :id="`${name}-alert`"
+                        type="success"
+                    > {{ responseMessage }} </v-alert>
                 </v-col>
 
             </v-row>
@@ -31,27 +37,74 @@
 <!---------------------------------------------->
 <script>
 
+    import axios from "axios"; 
+
     export default {
         name: 'Add',
 
-        mounted() {
-            console.log("Add mounted")
-        },
-
         props: {
-            title: { type: String, requred: true },
+            name: { type: String, required: true },
         },
 
         data: () => ({
-            test: null
+            responseMessage: "", 
+            name: "", 
+            inputInfo: "",
         }),
 
+        mounted: function() {
+            const alertName = this.$props.name + "-alert"; 
+            document.getElementById(alertName).style.display = "none"; 
+        },
+
         methods: {
-            handleAddFile: (file) => {
-                console.log(file)
-                const fileReader = new FileReader()
-                console.log("File reader result", fileReader.result) 
-            }
+
+            handleInputChange: function() {
+                this.inputInfo = document.getElementById(this.$props.name).value; 
+            },
+
+            handleAddInfo: function() {
+
+                // Get the reference to the elements
+                let errorAlert = document.getElementById("alert"); 
+                const successAlertName = this.name + "-alert"; 
+                let successAlert = document.getElementById(successAlertName)
+
+                // If there is nothing in the textarea, return 
+                if (!this.inputInfo || this.inputInfo === "") {
+                    errorAlert.style.display = "inline"; 
+                    setTimeout( () => { errorAlert.style.display = "none"; }, 5000); 
+                    return;  
+                }
+
+                // Display progess bar
+                document.getElementById("progress").style.display = "inline"
+
+                // Get name 
+                let apiEndpoint = this.name
+                // Translate apiEndpoint from spanish to english
+                if (apiEndpoint === "Productos") apiEndpoint = "products"; 
+                else if (apiEndpoint === "Compradores") apiEndpoint = "buyers"; 
+                else apiEndpoint = "transactions"; 
+                // Make post request 
+                axios.post(`http://localhost:3000/${ apiEndpoint }`, this.inputInfo)
+                     .then( response => { 
+                         this.responseMessage = response.data; 
+                     })
+                     .finally( err => {
+                         if (err) console.log(err); 
+                         // Clear input
+                         document.getElementById(this.name).value = "";  
+                         this.inputInfo = ""; 
+                         // Hide progress bar
+                         document.getElementById("progress").style.display = "none"; 
+                         // Show success message
+                         successAlert.style.display = "inline"; 
+                         setTimeout( () => {
+                             successAlert.style.display = "none";
+                         }, 3000); 
+                     });
+            }, 
         }
     };
 
@@ -65,4 +118,10 @@
         background-color: #4800FF !important;
         color: #ffffff !important; 
     }
+    textarea {
+        border: 1px solid #ffffff;
+        border-radius: 5px;  
+        color: #ffffff; 
+    }
+
 </style>

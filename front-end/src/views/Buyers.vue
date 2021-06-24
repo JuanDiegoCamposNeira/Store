@@ -4,7 +4,7 @@
 <template>
     <div>
         <!-- Title --> 
-        <p class="title d-flex justify-center align-center"> Compradores </p>
+        <p class="display-3 white--text d-flex justify-center align-center"> Compradores </p>
         <!-- Buyers --> 
         <buyer v-for="buyer in this.buyersData" 
                 :key="buyer.name" 
@@ -50,12 +50,4 @@ export default {
 <!--                Style                     --> 
 <!---------------------------------------------->
 <style scoped>
-.title {
-    width: 100%;
-    height: 4rem;
-    /* Text */
-    color: #F3F6FF !important; 
-    font-size: 3.5rem !important;
-    font-weight: 350; 
-}
 </style>

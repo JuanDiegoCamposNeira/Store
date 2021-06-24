@@ -57,6 +57,7 @@ func postBuyers(response http.ResponseWriter, request *http.Request) {
 	buyers = dbResponse.Uids // Save the UIDs assigned by DGraph to the buyers
 
 	//------------- Send succsessfull response -------------
+	response.Header().Set("Access-Control-Allow-Origin", "*")
 	message := fmt.Sprintf("PostBuyers: Added [%v] buyers, date [%v]", len(buyersArr), date)
 	response.Write([]byte(message))
 }

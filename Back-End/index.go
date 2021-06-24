@@ -19,7 +19,6 @@ var productsObj = make(map[string]Product)        // Store products in a map to 
 // Store assigned Uids by Dgraph
 var buyers = make(map[string]string)
 var products = make(map[string]string)
-var transactions = make(map[string]string)
 
 //--------------------------------------------------------
 //						Main

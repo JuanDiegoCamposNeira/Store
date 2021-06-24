@@ -102,10 +102,9 @@ func postTransactions(response http.ResponseWriter, request *http.Request) {
 	}
 
 	//------------- Process DB response -------------
-	// Save the UIDs assigned by DGraph to the transactions
-	transactions = dbResponse.Uids
 
 	//------------- Send succsessfull response -------------
+	response.Header().Set("Access-Control-Allow-Origin", "*")
 	message := fmt.Sprintf("PostTransactions: Added [%v] transactions, date [%v]", len(transactionsDecoded), date)
 	response.Write([]byte(message))
 }
