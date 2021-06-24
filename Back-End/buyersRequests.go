@@ -202,16 +202,20 @@ func getBuyerById(response http.ResponseWriter, request *http.Request) {
 	for _, transaction := range res.TransactionsHistory {
 		// Traverse the products in the transactions
 		for _, product := range transaction.Products {
-			productSuggestions := []Product{}
-			// Get the first two items in the map
-			count := 0
+			mostOrderedProduct := productsObj[product.Uid]
+			secondMostOrderedProduct := productsObj[product.Uid]
+			suggestions[product.Uid][product.Uid] = 0
+			//
 			for key := range suggestions[product.Uid] {
-				if count == 2 {
-					break
+				if suggestions[product.Uid][key] > suggestions[product.Uid][mostOrderedProduct.Uid] {
+					// The most Ordered product will be in second place now
+					secondMostOrderedProduct = mostOrderedProduct
+					mostOrderedProduct = productsObj[key]
+				} else if suggestions[product.Uid][key] > suggestions[product.Uid][secondMostOrderedProduct.Uid] {
+					secondMostOrderedProduct = productsObj[key]
 				}
-				productSuggestions = append(productSuggestions, productsObj[key])
-				count++
 			}
+			productSuggestions := []Product{mostOrderedProduct, secondMostOrderedProduct}
 			// Save suggestions for the current product
 			responseSuggestions[product.Name] = productSuggestions
 		}
