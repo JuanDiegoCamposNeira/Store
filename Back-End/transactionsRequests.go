@@ -102,6 +102,7 @@ func postTransactions(response http.ResponseWriter, request *http.Request) {
 	}
 
 	//------------- Process DB response -------------
+	fmt.Println(dbResponse)
 
 	//------------- Send succsessfull response -------------
 	response.Header().Set("Access-Control-Allow-Origin", "*")
