@@ -5,7 +5,9 @@
     <v-container fluid>
         <v-row class="justify-center">
 
-            <!-- Buyer's info -->
+            <!----------------------------------------->
+            <!--            Person's info            -->
+            <!----------------------------------------->
             <v-col class="buyer-info mb-4 d-flex justify-space-around" 
                    cols="11" >
                 <p class="font-weight-light display-1"> 
@@ -22,7 +24,9 @@
                 </p>
             </v-col>            
 
-            <!-- Suggestions -->
+            <!----------------------------------------->
+            <!--            Suggestions              -->
+            <!----------------------------------------->
             <v-col class="suggestions mb-4 d-flex flex-flow-vertical flex-wrap"  
                    cols="11" >
                 <!-- Title --> 
@@ -34,7 +38,9 @@
                             :productsSuggested="suggestions[suggestion]" />
             </v-col>  
 
-            <!-- Transactions history -->
+            <!----------------------------------------->
+            <!--       Transactions history          -->
+            <!----------------------------------------->
             <v-col style="border-right: 3px solid #190862; " class="history mb-4" 
                    cols="11" 
                    xs="11"
@@ -60,7 +66,9 @@
                </div>
             </v-col>
 
-            <!-- Same Ip -->
+            <!----------------------------------------->
+            <!--               Same Ip               -->
+            <!----------------------------------------->
             <v-col style="border-left: 3px solid #190862; " class="sameIp mb-4" 
                    cols="11"
                    xs="11"

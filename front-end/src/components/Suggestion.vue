@@ -1,7 +1,12 @@
+<!---------------------------------------------->
+<!--              Template                    --> 
+<!---------------------------------------------->
 <template>
     <v-container fluid class="suggestion-wrapper mb-4 pa-0">
         
-        <!-- Title --> 
+        <!------------------------------------->
+        <!--            Page title           --> 
+        <!------------------------------------->
         <v-row class="product-suggestion">
             <v-col cols="4">
                 Por ordenar: 
@@ -11,7 +16,9 @@
             </v-col>
         </v-row>
 
-        <!-- Products -->
+        <!------------------------------------->
+        <!--             Products            -->
+        <!------------------------------------->
         <div v-for="suggestion in productsSuggested" :key="suggestion.uid"> 
             <v-container fluid>
                 <v-row>
@@ -31,7 +38,9 @@
     </v-container>
 </template>
 
-
+<!---------------------------------------------->
+<!--               Script                     --> 
+<!---------------------------------------------->
 <script>
     export default {
         name: "Suggestion", 
@@ -42,7 +51,9 @@
     }
 </script>
 
-
+<!---------------------------------------------->
+<!--                Style                     --> 
+<!---------------------------------------------->
 <style scoped>
     .label {
         font-size: 0.8rem;
